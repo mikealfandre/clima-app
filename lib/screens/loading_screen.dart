@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:clima/services/location.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:clima/services/networking.dart';
+import 'location_screen.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
+const apiKey = '2f2ae4e9aee94c62a7b2e2572e78f604';
 
 class LoadingScreen extends StatefulWidget {
   @override
@@ -10,42 +12,47 @@ class LoadingScreen extends StatefulWidget {
 }
 
 class _LoadingScreenState extends State<LoadingScreen> {
-  
+  double longitude;
+  double latitude;
+
   @override
   void initState() {
     super.initState();
-    getLocation();
+    getLocationData();
   }
 
-  void getLocation() async {
+  void getLocationData() async {
     //Need to add persmission tags for ios & android to info.plist and AndroidManifest.xml files.
     Location location = Location();
     //Can only add await here if that method is returning a Future
     await location.getCurrentLocation();
-    print(location.latitude);
-    print(location.longitude);
+
+    latitude = location.latitude;
+    longitude = location.longitude;
+
+    NetworkHelper networkHelper = NetworkHelper(
+        'https://api.openweathermap.org/data/2.5/weather?lat=$latitude&lon=$longitude&appid=$apiKey&units=imperial');
+
+    var weatherData = await networkHelper.getData();
+
+    Navigator.push(context, MaterialPageRoute(builder: (context) {
+      return LocationScreen(
+        locationWeather: weatherData,
+      );
+    }));
   }
 
-  void getData() async {
-    http.Response response = await http.get('https://samples.openweathermap.org/data/2.5/weather?lat=35&lon=139&appid=b6907d289e10d714a6e88b30761fae22');
-    if (response.statusCode == 200) {
-      String data  = response.body;
-      print(data);
-
-      var longitude = jsonDecode(data)['coord']['lon'];
-      print(longitude);
-
-    } else {
-      print(response.statusCode);
-    }
-    
-    print(response.body);
-
-  }
+  void getData() async {}
 
   @override
   Widget build(BuildContext context) {
-    getData();
-    return Scaffold();
+    return Scaffold(
+      body: Center(
+        child: SpinKitChasingDots(
+          color: Colors.white,
+          size: 50.0,
+        ),
+      ),
+    );
   }
 }
